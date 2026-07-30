@@ -36,9 +36,9 @@ body {
   }
 
   #directions{
-    position: absolute;
-    right: 10px;
-    top: 10px;
+    position: relative;
+    margin-top: 10px;
+    border-top: 1px solid #999;
     background-color: rgba(211,211,211, 1);
     color: Black;
     padding: 1em;
@@ -48,16 +48,30 @@ body {
 
   #debug{
     display: none;
-    position: absolute;
-    width: 70vw;
-    height: 50vh;
-    left: 10px;
-    top: 10px;
+    position: relative;
+    width: 100%;
+    max-height: 40vh;
+    margin-top: 10px;
+    border-top: 1px solid #999;
     background-color: rgba(211,211,211, 1);
     color: Black;
     padding: 1em;
     overflow-y:scroll;
     overflow-x:auto;
+    box-sizing: border-box;
+  }
+
+  /* A-Frame injects its own Enter VR / Enter AR / Exit VR controls at
+     runtime, normally fixed to the bottom-right of the viewport. Pin them
+     to the bottom-left instead so all UI lives on the same side. */
+  .a-enter-vr, .a-enter-ar {
+    left: 10px !important;
+    right: auto !important;
+  }
+
+  .a-exit-vr-button {
+    left: 10px !important;
+    right: auto !important;
   }
 
   .toggle {
