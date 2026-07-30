@@ -67,9 +67,23 @@ body {
      anchored to the right edge via their own "right" CSS. Overriding the
      buttons directly (not just their wrappers) is what actually moves them
      to the left side. */
-  .a-enter-vr-button, .a-enter-ar-button, .a-exit-vr-button {
+  .a-enter-ar-button, .a-exit-vr-button {
     left: 10px !important;
     right: auto !important;
+  }
+
+  /*
+    keyDownInput.js moves .a-enter-vr-button into #directions, next to the
+    Toggle Console button, once the scene loads. A-Frame's own rule
+    (position: absolute; right: 0; bottom: 0;) would otherwise anchor it to
+    the corner of whatever positioned ancestor it lands in — this overrides
+    that so it sits inline in normal document flow instead.
+  */
+  #directions .a-enter-vr-button {
+    position: static !important;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 8px;
   }
 
   .toggle {

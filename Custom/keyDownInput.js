@@ -70,3 +70,22 @@ function togglePatternFullscreen() {
     if (infoPanel) infoPanel.style.display = patternIsFullscreen ? 'none' : '';
     if (directions) directions.style.display = patternIsFullscreen ? 'none' : '';
 }
+
+/*
+    A-Frame creates the Enter VR button dynamically (as a child of the
+    full-viewport-width .a-enter-vr wrapper) once the scene finishes
+    initializing, so it doesn't exist in the static HTML and can't just be
+    written into #directions by hand. Waiting for a-scene's "loaded" event
+    guarantees it exists before we try to move it. Moving the actual button
+    element (not just its wrapper) preserves A-Frame's click handler, since
+    listeners stay attached to the element regardless of where it lives in
+    the DOM.
+*/
+document.querySelector('a-scene').addEventListener('loaded', () => {
+    const directions = document.querySelector('#directions');
+    const consoleButton = document.querySelector('#consoleButton');
+    const vrButton = document.querySelector('.a-enter-vr-button');
+    if (directions && consoleButton && vrButton) {
+        consoleButton.insertAdjacentElement('afterend', vrButton);
+    }
+});
