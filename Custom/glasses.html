@@ -103,16 +103,6 @@
             height: 600px;
         }
 
-        .back-button {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            min-height: 44px;
-            font-size: 15px;
-            background: rgba(10, 10, 10, 0.55);
-            z-index: 10;
-        }
-
         /* Pattern renders */
         .pattern-white   { background: #fff; }
         .pattern-red      { background: #ff2020; }
@@ -154,7 +144,6 @@
     </div>
 
     <div id="displayView" class="hidden">
-        <button class="focusable back-button" id="backButton">&larr; Back</button>
         <div id="patternCanvas"></div>
     </div>
 
@@ -174,7 +163,9 @@
         var displayViewEl = document.getElementById('displayView');
         var patternListEl = document.getElementById('patternList');
         var patternCanvasEl = document.getElementById('patternCanvas');
-        var backButtonEl = document.getElementById('backButton');
+
+        // 'list' | 'display' — governs how keydown is interpreted below.
+        var currentView = 'list';
 
         // Build the pattern list as focusable buttons.
         PATTERNS.forEach(function (pattern) {
@@ -198,9 +189,8 @@
             patternListEl.appendChild(item);
         });
 
-        backButtonEl.addEventListener('click', showListView);
-
         function showListView() {
+            currentView = 'list';
             displayViewEl.classList.add('hidden');
             listViewEl.classList.remove('hidden');
             var first = patternListEl.querySelector('.focusable');
@@ -208,14 +198,13 @@
         }
 
         function showDisplayView(patternId) {
+            currentView = 'display';
             patternCanvasEl.className = 'pattern-' + patternId;
             listViewEl.classList.add('hidden');
             displayViewEl.classList.remove('hidden');
-            // Deliberately not focusing the back button here — leaving focus
-            // on document.body means the pattern renders with zero visible
-            // UI (no focus ring) until the wearer presses a direction, at
-            // which point moveFocus() below naturally lands on the only
-            // focusable element in this view (back button).
+            // No focusable elements in this view at all — the pattern
+            // renders with zero visible UI. Any direction press (handled
+            // below) returns to the list.
             document.activeElement.blur();
         }
 
@@ -244,6 +233,22 @@
         }
 
         document.addEventListener('keydown', function (e) {
+            // "Back navigation" isn't part of the Neural Band's confirmed
+            // gesture vocabulary (only the four arrow directions + Enter
+            // are documented as supported) — so instead of a dedicated
+            // back gesture, any direction press while viewing a pattern
+            // full-screen (nothing else to navigate to there) returns to
+            // the list. This is what replaces the removed Back button.
+            if (currentView === 'display') {
+                switch (e.key) {
+                    case DPAD.UP: case DPAD.DOWN: case DPAD.LEFT: case DPAD.RIGHT:
+                        showListView();
+                        e.preventDefault();
+                        break;
+                }
+                return;
+            }
+
             switch (e.key) {
                 case DPAD.UP:     moveFocus('up');    break;
                 case DPAD.DOWN:   moveFocus('down');  break;
