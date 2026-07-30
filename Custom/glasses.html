@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Vision test pattern viewer for Meta Ray-Ban Display, navigable with Neural Band gestures">
+    <meta name="mrbd-web-app-capable" content="yes">
+    <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+    <title>Pattern Viewer</title>
+    <style>
+        /*
+            Fixed 600x600 viewport, no scrolling, dark background with
+            bright/light UI — per Meta Ray-Ban Display Web App guidance.
+            The display is an additive waveguide: pure black is fully
+            transparent, so dark chrome effectively disappears and bright
+            colors are what's actually visible to the wearer.
+        */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 600px;
+            height: 600px;
+            overflow: hidden;
+            background: #000;
+            color: #eee;
+            font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        #listView, #displayView {
+            width: 600px;
+            height: 600px;
+            box-sizing: border-box;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* — List view — */
+        #listView {
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        #listTitle {
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            margin: 0 0 12px 4px;
+        }
+
+        #patternList {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* — Shared focusable style — */
+        .focusable {
+            font-size: 18px;
+            color: #eee;
+            background: #151515;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 0 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 120ms ease;
+        }
+
+        .pattern-item {
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+        }
+
+        .focusable:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 16px rgba(0, 212, 255, 0.5);
+            background: #1c1c1c;
+        }
+
+        .swatch {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            margin-right: 14px;
+            border: 1px solid #444;
+            flex-shrink: 0;
+        }
+
+        /* — Display view — */
+        #displayView {
+            position: relative;
+        }
+
+        #patternCanvas {
+            width: 600px;
+            height: 600px;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            min-height: 44px;
+            font-size: 15px;
+            background: rgba(10, 10, 10, 0.55);
+            z-index: 10;
+        }
+
+        /* Pattern renders */
+        .pattern-white   { background: #fff; }
+        .pattern-red      { background: #ff2020; }
+        .pattern-green    { background: #20ff20; }
+        .pattern-blue     { background: #2060ff; }
+        .pattern-black    { background: #000; }
+        .pattern-grille {
+            background: repeating-linear-gradient(to right, #fff 0px 20px, #000 20px 40px);
+        }
+        .pattern-crosshair {
+            background: #000;
+            position: relative;
+        }
+        .pattern-crosshair::before,
+        .pattern-crosshair::after {
+            content: '';
+            position: absolute;
+            background: #fff;
+        }
+        .pattern-crosshair::before {
+            /* horizontal bar */
+            left: 0; right: 0; top: 50%;
+            height: 6px;
+            transform: translateY(-50%);
+        }
+        .pattern-crosshair::after {
+            /* vertical bar */
+            top: 0; bottom: 0; left: 50%;
+            width: 6px;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="listView">
+        <div id="listTitle">Pattern Viewer</div>
+        <div id="patternList"></div>
+    </div>
+
+    <div id="displayView" class="hidden">
+        <button class="focusable back-button" id="backButton">&larr; Back</button>
+        <div id="patternCanvas"></div>
+    </div>
+
+    <script>
+        // Same 7 default patterns as the Custom Pattern Creator's default package.
+        var PATTERNS = [
+            { id: 'white',     name: 'White',     swatch: '#fff' },
+            { id: 'red',       name: 'Red',       swatch: '#ff2020' },
+            { id: 'green',     name: 'Green',     swatch: '#20ff20' },
+            { id: 'blue',      name: 'Blue',      swatch: '#2060ff' },
+            { id: 'black',     name: 'Black',     swatch: '#000' },
+            { id: 'grille',    name: 'Grille',    swatch: 'repeating-linear-gradient(to right, #fff 0 4px, #000 4px 8px)' },
+            { id: 'crosshair', name: 'Crosshair', swatch: '#000' },
+        ];
+
+        var listViewEl = document.getElementById('listView');
+        var displayViewEl = document.getElementById('displayView');
+        var patternListEl = document.getElementById('patternList');
+        var patternCanvasEl = document.getElementById('patternCanvas');
+        var backButtonEl = document.getElementById('backButton');
+
+        // Build the pattern list as focusable buttons.
+        PATTERNS.forEach(function (pattern) {
+            var item = document.createElement('button');
+            item.className = 'focusable pattern-item';
+            item.dataset.patternId = pattern.id;
+
+            var swatch = document.createElement('span');
+            swatch.className = 'swatch';
+            swatch.style.background = pattern.swatch;
+            item.appendChild(swatch);
+
+            var label = document.createElement('span');
+            label.textContent = pattern.name;
+            item.appendChild(label);
+
+            item.addEventListener('click', function () {
+                showDisplayView(pattern.id);
+            });
+
+            patternListEl.appendChild(item);
+        });
+
+        backButtonEl.addEventListener('click', showListView);
+
+        function showListView() {
+            displayViewEl.classList.add('hidden');
+            listViewEl.classList.remove('hidden');
+            var first = patternListEl.querySelector('.focusable');
+            if (first) first.focus();
+        }
+
+        function showDisplayView(patternId) {
+            patternCanvasEl.className = 'pattern-' + patternId;
+            listViewEl.classList.add('hidden');
+            displayViewEl.classList.remove('hidden');
+            // Deliberately not focusing the back button here — leaving focus
+            // on document.body means the pattern renders with zero visible
+            // UI (no focus ring) until the wearer presses a direction, at
+            // which point moveFocus() below naturally lands on the only
+            // focusable element in this view (back button).
+            document.activeElement.blur();
+        }
+
+        // — D-pad input, per Meta's Web App build guide —
+        var DPAD = {
+            UP: 'ArrowUp', DOWN: 'ArrowDown',
+            LEFT: 'ArrowLeft', RIGHT: 'ArrowRight',
+            SELECT: 'Enter',
+        };
+
+        function moveFocus(direction) {
+            var focusables = Array.from(
+                document.querySelectorAll('.focusable:not([disabled]):not(.hidden)')
+            ).filter(function (el) { return el.offsetParent !== null; });
+            if (!focusables.length) return;
+
+            var idx = focusables.indexOf(document.activeElement);
+            if (idx === -1) { focusables[0].focus(); return; }
+
+            var next = (direction === 'up' || direction === 'left')
+                ? (idx > 0 ? idx - 1 : focusables.length - 1)
+                : (idx < focusables.length - 1 ? idx + 1 : 0);
+
+            focusables[next].focus();
+            focusables[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+
+        document.addEventListener('keydown', function (e) {
+            switch (e.key) {
+                case DPAD.UP:     moveFocus('up');    break;
+                case DPAD.DOWN:   moveFocus('down');  break;
+                case DPAD.LEFT:   moveFocus('left');  break;
+                case DPAD.RIGHT:  moveFocus('right'); break;
+                case DPAD.SELECT:
+                    if (document.activeElement.classList.contains('focusable')) {
+                        document.activeElement.click();
+                    }
+                    break;
+                default: return; // don't preventDefault on unhandled keys
+            }
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
