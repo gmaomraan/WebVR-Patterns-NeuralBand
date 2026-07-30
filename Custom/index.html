@@ -118,10 +118,37 @@
         </script>
         <script src="animations/movementComponent.js" type="text/javascript"></script>
         <script src="input/controllerComponent.js" type="text/javascript"></script>
+        <script>
+            /*
+                A-Frame gates its "magic window" orientation-based look
+                controls (look-controls' setupMagicWindowControls) behind
+                utils.device.isMobile(), which pattern-matches
+                navigator.userAgent against a list of known phone/tablet UA
+                substrings. The glasses' browser doesn't match that list, so
+                A-Frame never even creates the underlying
+                THREE.DeviceOrientationControls object — orientation-based
+                looking is skipped entirely, regardless of whether the
+                browser actually fires deviceorientation events.
+
+                utils.device.isMobile is called via property lookup
+                (utils.device.isMobile()) at the actual call sites, not a
+                closed-over reference, so overriding it here — after
+                aframe.min.js has defined AFRAME.utils, but before <a-scene>
+                is parsed and initializes — takes effect for look-controls.
+
+                This does NOT create stereo/binocular VR (impossible on this
+                monocular display, see repo history) — at best it enables a
+                single flat view that pans as you turn your head, and only
+                if this browser actually dispatches deviceorientation events
+                to begin with, which is unconfirmed. Untested on real
+                hardware; report back what actually happens.
+            */
+            AFRAME.utils.device.isMobile = function () { return true; };
+        </script>
     </head>
 
     <body>
-        <a-scene>
+        <a-scene device-orientation-permission-ui="enabled: false">
             <a-entity raycaster cursor="rayOrigin: mouse; mouseCursorStylesEnabled: false;" position="0 0 0" ></a-entity>
             <a-assets>
                 <img id="QC" src="textures/TG18-QC.2k_12b.png">
