@@ -62,14 +62,12 @@ body {
   }
 
   /* A-Frame injects its own Enter VR / Enter AR / Exit VR controls at
-     runtime, normally fixed to the bottom-right of the viewport. Pin them
-     to the bottom-left instead so all UI lives on the same side. */
-  .a-enter-vr, .a-enter-ar {
-    left: 10px !important;
-    right: auto !important;
-  }
-
-  .a-exit-vr-button {
+     runtime. The .a-enter-vr / .a-enter-ar wrapper divs span the full
+     viewport width; the actual clickable buttons inside them are the ones
+     anchored to the right edge via their own "right" CSS. Overriding the
+     buttons directly (not just their wrappers) is what actually moves them
+     to the left side. */
+  .a-enter-vr-button, .a-enter-ar-button, .a-exit-vr-button {
     left: 10px !important;
     right: auto !important;
   }
