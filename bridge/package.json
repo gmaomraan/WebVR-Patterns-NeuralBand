@@ -1,0 +1,13 @@
+{
+  "name": "webvr-patterns-gesture-bridge",
+  "version": "1.0.0",
+  "description": "WebSocket bridge relaying Neural Band gesture commands to the WebVR-Patterns Custom pattern viewer",
+  "main": "bridge-server.js",
+  "scripts": {
+    "start": "node bridge-server.js",
+    "test": "node gesture-test-client.js next"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
