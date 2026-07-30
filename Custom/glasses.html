@@ -166,6 +166,7 @@
 
         // 'list' | 'display' — governs how keydown is interpreted below.
         var currentView = 'list';
+        var currentPatternIndex = -1;
 
         // Build the pattern list as focusable buttons.
         PATTERNS.forEach(function (pattern) {
@@ -199,6 +200,7 @@
 
         function showDisplayView(patternId) {
             currentView = 'display';
+            currentPatternIndex = PATTERNS.findIndex(function (p) { return p.id === patternId; });
             patternCanvasEl.className = 'pattern-' + patternId;
             listViewEl.classList.add('hidden');
             displayViewEl.classList.remove('hidden');
@@ -206,6 +208,11 @@
             // renders with zero visible UI. Any direction press (handled
             // below) returns to the list.
             document.activeElement.blur();
+        }
+
+        function showNextPattern() {
+            var nextIndex = (currentPatternIndex + 1) % PATTERNS.length;
+            showDisplayView(PATTERNS[nextIndex].id);
         }
 
         // — D-pad input, per Meta's Web App build guide —
@@ -243,6 +250,12 @@
                 switch (e.key) {
                     case DPAD.UP: case DPAD.DOWN: case DPAD.LEFT: case DPAD.RIGHT:
                         showListView();
+                        e.preventDefault();
+                        break;
+                    case DPAD.SELECT:
+                        // Index pinch/tap: cycle to the next pattern without
+                        // leaving the full-screen display view.
+                        showNextPattern();
                         e.preventDefault();
                         break;
                 }
